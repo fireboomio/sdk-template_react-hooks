@@ -1,0 +1,1 @@
+# React hooks SDK template for fireboom
