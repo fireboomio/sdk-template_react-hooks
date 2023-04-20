@@ -2,7 +2,9 @@
   "name": "React hooks",
   "author": "fireboom",
   "version": "0.1.0",
-  "description": "这里是sdk的描述",
+  "type": "client",
+  "clientLanguage": "typescript",
+  "description": "React hooks client",
   "outputPath": "./sdk/react-hooks",
   "enabled": true
 }
