@@ -1,18 +1,18 @@
 import {useCallback, useContext, useEffect, useMemo, useState} from "react";
-import { RequestOptions, MutateRequestOptions, SubscriptionRequestOptions, Response} from "fireboom-wundersdk/server"
 import {WunderGraphContext} from "./provider";
-{{#if hasImports}}import { {{imports}} } from "./models";{{/if}}
+import { RequestOptions, MutateRequestOptions, SubscriptionRequestOptions, Response} from "@wundergraph/sdk"
+import type { {{> operation_partial operations=operations includeInternal=false includeInject=false includeResponseData=true}} } from './models'
 
-export const useFireboom = () => {
+export const useWunderGraph = () => {
     const ctx = useContext(WunderGraphContext)
     if (ctx === undefined) {
-        throw new Error("WunderGraphContext missing, make sure to put FireboomProvider at the root of your app")
+        throw new Error("WunderGraphContext missing, make sure to put WunderGraphProvider at the root of your app")
     }
     return {
         client: ctx.client,
         onWindowFocus: ctx.onWindowFocus,
         onWindowBlur: ctx.onWindowBlur,
-{{#if hasAuthProviders}}
+{{#if (isNotEmpty authProviders)}}
         user: ctx.user,
 {{/if}}
         initialized: ctx.initialized,
@@ -27,13 +27,13 @@ interface InternalOptions {
     requiresAuthentication: boolean;
 }
 
-{{#if hookHasQueries}}
+{{#if hasQueries}}
     const Query = <R extends {}, I extends {}>(
         promiseFactory: (options: RequestOptions<I, R>) => Promise<Response<R>>,
         internalOptions: InternalOptions,
         options?: RequestOptions<I, R>
     ) => {
-        const {initialized,{{#if hasAuthProviders}}user,{{/if}}onWindowFocus,refetchMountedQueries,queryCache} = useFireboom();
+        const {initialized,{{#if hasAuthProviders}}user,{{/if}}onWindowFocus,refetchMountedQueries,queryCache} = useWunderGraph();
         const [_options, _setOptions] = useState<MutateRequestOptions<I>|undefined>(options);
         const [shouldFetch, setShouldFetch] = useState<boolean>(options === undefined || options.initialState === undefined);
         const refetch = useCallback((options?: RequestOptions<I, R>) => {
@@ -115,13 +115,13 @@ interface InternalOptions {
     };
 {{/if}}
 
-{{#if  hookHasMutations}}
+{{#if hasMutations}}
     const Mutation = <R extends {}, I extends {}>(
         promiseFactory: (options: RequestOptions<I, R>) => Promise<Response<R>>,
         internalOptions: InternalOptions,
         options?: MutateRequestOptions<I>
     ) => {
-        const { {{#if hasAuthProviders}}user,{{/if}}setRefetchMountedQueries} = useFireboom();
+        const { {{#if hasAuthProviders}}user,{{/if}}setRefetchMountedQueries} = useWunderGraph();
         const [_options] = useState<MutateRequestOptions<I> | undefined >(options);
         const [response, setResponse] = useState<Response<R>>({ status: "none" });
         const mutate = useCallback(async (options?: MutateRequestOptions<I>) => {
@@ -150,14 +150,14 @@ interface InternalOptions {
     };
 {{/if}}
 
-{{#if  hookHasSubscriptionsOrLiveQueries }}{{#unless reactNative}}
+{{#if hasSubscriptionsOrLiveQueries }}{{#unless reactNative}}
 const Subscription = <R, I>(
     subscriptionFactory: (options: RequestOptions<I>, cb: (response: Response<R>) => void) => void,
     internalOptions: InternalOptions,
     options?: SubscriptionRequestOptions<I>
 ) => {
     const optionsJSON = JSON.stringify(options);
-    const { {{#if hasAuthProviders}}user,{{/if}} initialized, refetchMountedQueries } = useFireboom();
+    const { {{#if hasAuthProviders}}user,{{/if}} initialized, refetchMountedQueries } = useWunderGraph();
     const [_options, _setOptions] = useState<RequestOptions<I> | undefined>(options);
     const [response, setResponse] = useState<Response<R>>({ status: "loading" });
     const [lastInit,setLastInit] = useState<boolean|undefined>();
@@ -217,44 +217,44 @@ export const useLoadingComplete = (...responses: Response<any>[]) => {
     return loading
 }
 
-{{#if hookHasQueries}}
+{{#if hasQueries}}
 export const useQuery = {
-    {{#each hookQueries}}
+    {{#each queries}}
     {{name}}: (options{{#unless hasInput}}?{{/unless}}: RequestOptions<{{#if hasInput}}{{name}}Input{{else}}never{{/if}},{{name}}Response>) => {
-        const {client} = useFireboom();
+        const {client} = useWunderGraph();
         return Query(client.query.{{name}},{requiresAuthentication: {{requiresAuthentication}} },options);
     },
     {{/each}}
 }
 {{/if}}
 
-{{#if  hookHasMutations}}
+{{#if hasMutations}}
 export const useMutation = {
-{{#each hookMutations}}
+{{#each mutations}}
     {{name}}: (options{{#unless hasInput}}?{{/unless}}: MutateRequestOptions<{{#if hasInput}}{{name}}Input{{else}}never{{/if}}>) => {
-        const {client} = useFireboom();
+        const {client} = useWunderGraph();
         return Mutation(client.mutation.{{name}},{requiresAuthentication: {{requiresAuthentication}} } ,options);
     },
 {{/each}}
 }
 {{/if}}
 
-{{#if  hookHasSubscriptions}}{{#unless reactNative}}
+{{#if hasSubscriptions}}{{#unless reactNative}}
 export const useSubscription = {
-{{#each hookSubscriptions}}
+{{#each subscriptions}}
     {{name}}: (options{{#unless hasInput}}?{{/unless}}: SubscriptionRequestOptions{{#if hasInput}}<{{name}}Input>{{/if}}) => {
-        const {client} = useFireboom();
+        const {client} = useWunderGraph();
         return Subscription(client.subscription.{{name}},{requiresAuthentication: {{requiresAuthentication}} }, options);
     },
 {{/each}}
 }
 {{/unless}}{{/if}}
 
-{{#if  hookHasLiveQueries}}{{#unless reactNative}}
+{{#if hasLiveQueries}}{{#unless reactNative}}
     export const useLiveQuery = {
-    {{#each hookLiveQueries }}
+    {{#each liveQueries }}
         {{name}}: (options{{#unless hasInput}}?{{/unless}}: SubscriptionRequestOptions{{#if hasInput}}<{{name}}Input>{{/if}}) => {
-            const {client} = useFireboom();
+            const {client} = useWunderGraph();
             return Subscription(client.liveQuery.{{name}},{requiresAuthentication: {{requiresAuthentication}} }, options);
         },
     {{/each}}
